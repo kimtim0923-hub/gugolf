@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gugolf AI Preview Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0a84ff;
+            --primary-dark: #0040dd;
+            --bg: #0b0e14;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f5f5f7;
+            --text-dim: #a1a1a6;
+            --accent-gold: #ffcc00;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        header {
+            width: 100%;
+            padding: 40px 0;
+            text-align: center;
+            background: linear-gradient(to bottom, #161c24, var(--bg));
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.8rem;
+            margin: 0;
+            background: linear-gradient(45deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding-bottom: 100px;
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 16px 32px;
+            border-radius: 16px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #btn-preview {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 10px 20px rgba(10, 132, 255, 0.3);
+        }
+
+        #btn-image {
+            background-color: #2c2c2e;
+            color: white;
+            border: 1px solid var(--glass-border);
+        }
+
+        button:hover {
+            transform: translateY(-4px);
+            filter: brightness(1.2);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .output-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .panel {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            color: var(--accent-gold);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 8px;
+        }
+
+        textarea {
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 16px;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background: rgba(0, 255, 127, 0.1);
+            color: #00ff7f;
+            margin-left: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .output-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Gugolf Preview Hub</h1>
+        <p style="color: var(--text-dim); margin-top: 10px;">스마트한 골프 뉴스 제작을 위한 AI 파트너</p>
+    </header>
+
+    <div class="container">
+        <div class="card actions">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 0.8rem; color: var(--text-dim);">검색 기준 날짜</label>
+                <input type="date" id="ref-date" value="2026-03-03"
+                    style="padding: 12px; border-radius: 8px; background: #1c1c1e; border: 1px solid var(--glass-border); color: white;">
+            </div>
+            <button id="btn-preview">
+                <span>오늘의 프리뷰 생성</span>
+                <div class="loader" id="loader-preview"></div>
+            </button>
+            <button id="btn-report" style="background-color: #4a90e2; color: #fff; border: none;">
+                <span>지난주 결과 리포트 생성</span>
+                <div class="loader" id="loader-report"></div>
+            </button>
+            <button id="btn-image">
+                <span>이미지 프롬프트 추출</span>
+                <div class="loader" id="loader-image"></div>
+            </button>
+            <button id="btn-notion" style="background-color: #ffffff; color: #000; border: none; font-weight: 700;">
+                <span>📓 노션으로 내보내기</span>
+                <div class="loader" id="loader-notion" style="border-top-color: #000;"></div>
+            </button>
+        </div>
+
+        <div class="output-section">
+            <div class="panel">
+                <div class="panel-header" id="label-script">📝 TTS 스크립트 <span id="script-count" class="status-badge"
+                        style="display:none;">0자</span></div>
+                <textarea id="output-script" placeholder="프리뷰 혹은 리포트 생성 버튼을 누르면 대본이 여기에 출력됩니다."></textarea>
+            </div>
+            <div class="panel">
+                <div class="panel-header" id="label-points">⛳ 관전 포인트</div>
+                <textarea id="output-points" placeholder="핵심 내용이 여기에 출력됩니다." style="min-height: 150px;"></textarea>
+
+                <div class="panel-header" style="margin-top: 24px;">📊 수집된 대회</div>
+                <div id="tournaments-list"
+                    style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px; font-size: 0.9rem; color: var(--text-dim); overflow-y: auto; max-height: 200px;">
+                    대회 정보 없음
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="image-section" style="display:none; margin-top: 40px;">
+            <div class="panel-header">🎨 이미지 생성 맵 (Gemini 전용 프롬프트)</div>
+            <div class="table-container">
+                <table id="prompt-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">순서</th>
+                            <th style="width: 25%;">뉴스 내용 (시간 분할)</th>
+                            <th style="width: 40%;">추천 이미지 프롬프트 (영문)</th>
+                            <th style="width: 30%;">이미지 특징 및 사실성 강화 포인트</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 데이터 로드 시 행 추가 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btnPreview = document.getElementById('btn-preview');
+        const btnReport = document.getElementById('btn-report');
+        const btnImage = document.getElementById('btn-image');
+        const btnNotion = document.getElementById('btn-notion');
+        const loaderPreview = document.getElementById('loader-preview');
+        const loaderReport = document.getElementById('loader-report');
+        const loaderImage = document.getElementById('loader-image');
+        const loaderNotion = document.getElementById('loader-notion');
+        const outputScript = document.getElementById('output-script');
+        const outputPoints = document.getElementById('output-points');
+        const tourList = document.getElementById('tournaments-list');
+        const imageSection = document.getElementById('image-section');
+        const promptTable = document.getElementById('prompt-table').getElementsByTagName('tbody')[0];
+        const scriptCount = document.getElementById('script-count');
+
+        let lastTournaments = [];
+        let currentSegments = [];
+
+        btnPreview.onclick = async () => {
+            const date = document.getElementById('ref-date').value;
+            loaderPreview.style.display = 'block';
+            btnPreview.disabled = true;
+            document.getElementById('label-script').innerHTML = '📝 TTS 스크립트 (프리뷰) <span id="script-count" class="status-badge" style="display:none;">0자</span>';
+            document.getElementById('label-points').innerText = '⛳ 관전 포인트';
+
+            try {
+                const response = await fetch('/api/generate_preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    outputScript.value = data.tts_script;
+                    outputPoints.value = data.viewing_points;
+                    const countSpan = document.getElementById('script-count');
+                    countSpan.innerText = data.tts_script.length + '자';
+                    countSpan.style.display = 'inline-block';
+                    lastTournaments = data.tournaments;
+
+                    tourList.innerHTML = data.tournaments.map(t => {
+                        const status = t.name !== '해당 없음' && t.name !== '수집 실패' ? '✅' : '⚪';
+                        return `<div>${status} [${t.tour}] ${t.name || '정보 없음'}</div>`;
+                    }).join('');
+                } else {
+                    alert('에러: ' + data.detail);
+                }
+            } catch (e) {
+                alert('네트워크 에러: ' + e);
+            } finally {
+                loaderPreview.style.display = 'none';
+                btnPreview.disabled = false;
+            }
+        };
+
+        btnReport.onclick = async () => {
+            const date = document.getElementById('ref-date').value;
+            loaderReport.style.display = 'block';
+            btnReport.disabled = true;
+            document.getElementById('label-script').innerHTML = '📽️ 뉴스 리포트 (결과) <span id="script-count" class="status-badge" style="display:none;">0자</span>';
+            document.getElementById('label-points').innerText = '📊 주요 이슈 및 성적';
+
+            try {
+                const response = await fetch('/api/generate_report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    outputScript.value = data.tts_script;
+                    outputPoints.value = data.viewing_points;
+                    const countSpan = document.getElementById('script-count');
+                    countSpan.innerText = data.tts_script.length + '자';
+                    countSpan.style.display = 'inline-block';
+                    lastTournaments = data.tournaments;
+
+                    tourList.innerHTML = data.tournaments.map(t => {
+                        const status = t.name !== '해당 없음' && t.name !== '수집 실패' ? '✅' : '⚪';
+                        return `<div>${status} [${t.tour}] ${t.name || '정보 없음'}</div>`;
+                    }).join('');
+                } else {
+                    alert('에러: ' + data.detail);
+                }
+            } catch (e) {
+                alert('네트워크 에러: ' + e);
+            } finally {
+                loaderReport.style.display = 'none';
+                btnReport.disabled = false;
+            }
+        };
+
+        btnImage.onclick = async () => {
+            const script = outputScript.value;
+            if (!script) {
+                alert('먼저 대본을 생성해 주세요.');
+                return;
+            }
+
+            loaderImage.style.display = 'block';
+            btnImage.disabled = true;
+
+            try {
+                const response = await fetch('/api/generate_prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        script: script,
+                        tournaments: lastTournaments
+                    })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentSegments = data.segments;
+                    promptTable.innerHTML = '';
+                    data.segments.forEach(seg => {
+                        const row = promptTable.insertRow();
+                        row.id = `row-seg-${seg.segment_id}`;
+
+                        // 1. 순서
+                        row.insertCell(0).innerText = seg.segment_id;
+
+                        // 2. 뉴스 내용 (시간 분할)
+                        row.insertCell(1).innerText = seg.script;
+
+                        // 3. 추천 이미지 프롬프트 (영문)
+                        const promptCell = row.insertCell(2);
+                        promptCell.innerHTML = `
+                            <div style="font-size: 0.85rem; color: #7cfc00; font-family: monospace; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; line-height: 1.4;">
+                                ${seg.prompt}
+                            </div>
+                        `;
+
+                        // 4. 이미지 특징 및 사실성 강화 포인트
+                        const contextCell = row.insertCell(3);
+                        contextCell.innerHTML = `
+                            <div style="color: var(--accent-gold); font-size: 0.85rem; line-height: 1.5;">
+                                ${seg.background_context || '정보 없음'}
+                            </div>
+                        `;
+                    });
+                    imageSection.style.display = 'block';
+                    imageSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('에러: ' + data.detail);
+                }
+            } catch (e) {
+                alert('네트워크 에러: ' + e);
+            } finally {
+                loaderImage.style.display = 'none';
+                btnImage.disabled = false;
+            }
+        };
+
+        // 개별 이미지 생성 함수
+        async function generateSingleImage(segId) {
+            const segment = currentSegments.find(s => s.segment_id === segId);
+            if (!segment) return;
+
+            const loader = document.getElementById(`loader-seg-${segId}`);
+            const container = document.getElementById(`container-seg-${segId}`);
+
+            loader.style.display = 'block';
+            container.querySelector('button').disabled = true;
+
+            try {
+                const response = await fetch('/api/generate_actual_images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ segments: [segment] })
+                });
+                const data = await response.json();
+
+                if (response.ok && data.images && data.images[0].image_url) {
+                    const imgUrl = data.images[0].image_url;
+                    container.innerHTML = `
+                <div style="position:relative;">
+                    <img src="${imgUrl}" style="width:100%; border-radius:8px; margin-bottom:8px; border:1px solid var(--glass-border);">
+                    <a href="${imgUrl}" download="gugolf_image_${segId}.png" style="display:block; background:rgba(255,255,255,0.1); color:#fff; text-decoration:none; padding:5px; border-radius:4px; font-size:0.75rem;">
+                        📥 다운로드
+                    </a>
+                </div>
+            `;
+                } else {
+                    alert('이미지 생성 실패: ' + (data.images ? data.images[0].error : '알 수 없는 에러'));
+                    container.querySelector('button').disabled = false;
+                }
+            } catch (e) {
+                alert('네트워크 에러: ' + e);
+                container.querySelector('button').disabled = false;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // 전체 생성 버튼도 유지하되 내부적으로 개별 생성을 순차 실행하도록 변경 가능 (현재는 기존 로직 유지)
+        // 노션 내보내기 함수
+        btnNotion.onclick = async () => {
+            const script = outputScript.value;
+            if (!script) {
+                alert('내보낼 데이터가 없습니다. 프리뷰 혹은 리포트를 먼저 생성해 주세요.');
+                return;
+            }
+
+            // 현재 생성된 데이터의 유형 판단 (제목 라벨에서 추출)
+            const typeLabel = document.getElementById('label-script').innerText; // Changed from scriptTitle to label-script
+            const type = typeLabel.includes('리포트') ? '리포트' : '프리뷰';
+
+            const btn = btnNotion;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading spinner-border spinner-border-sm"></span> 저장 중...';
+
+            try {
+                const response = await fetch('/api/export_notion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        date: document.getElementById('ref-date').value, // Changed from inputDate.value to ref-date.value
+                        type: type, // 유형 추가 (프리뷰/리포트)
+                        tts_script: script,
+                        viewing_points: outputPoints.value,
+                        tournaments: lastTournaments, // Changed from currentTournaments to lastTournaments
+                        segments: currentSegments
+                    })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('성공적으로 노션에 저장되었습니다!');
+                } else {
+                    alert('노션 저장 실패: ' + data.detail);
+                }
+            } catch (e) {
+                alert('네트워크 에러: ' + e);
+            } finally {
+                loaderNotion.style.display = 'none';
+                btnNotion.disabled = false;
+            }
+        };
+    </script>
+</body>
+
+</html>
