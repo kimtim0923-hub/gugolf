@@ -25,6 +25,17 @@ load_dotenv(env_path, override=True)
 
 app = FastAPI(title="Gugolf AI Preview Generator")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+# CORS 설정 (러버블 프론트엔드 등 외부 도메인에서의 접속 허용)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 도메인 허용 (또는 프론트엔드 주소)
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용
+    allow_headers=["*"],  # 모든 HTTP 헤더 허용
+)
+
 # 정적 파일 및 템플릿 설정
 templates = Jinja2Templates(directory="templates")
 
