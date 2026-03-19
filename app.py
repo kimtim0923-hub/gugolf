@@ -87,9 +87,9 @@ async def api_generate_preview(req: GenerateRequest):
         ref_date = datetime.strptime(req.date, "%Y-%m-%d") if req.date else datetime.now()
         tournaments = collect_all_tours(ref_date)
         
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY가 없습니다.")
+            raise HTTPException(status_code=500, detail="GOOGLE_API_KEY가 없습니다.")
             
         result = generate_golf_news_script(
             tournaments=tournaments,

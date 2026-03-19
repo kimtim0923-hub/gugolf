@@ -1,6 +1,6 @@
 """
-Claude API를 이용한 골프뉴스 유튜브 TTS 스크립트 생성
-requests로 Anthropic HTTP API 직접 호출 (SDK 미사용)
+Google Gemini API를 이용한 골프뉴스 유튜브 TTS 스크립트 생성
+모델: gemini-2.0-flash
 """
 import json
 import os
@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 
 class GolfNewsOutput(BaseModel):
-    """Claude API 구조화 출력 스키마"""
+    """Gemini API 구조화 출력 스키마"""
     viewing_points: str          # 이번 주 관전 포인트 요약 (200자 이내)
     tts_script: str              # 유튜브 TTS 스크립트 (1800자 이내)
     thumbnails: list[str]        # 영상 썸네일 문구 후보 3개
@@ -49,28 +49,25 @@ SYSTEM_PROMPT = """당신은 골프 전문 유튜브 채널의 베테랑 뉴스 
 - 대회의 역사적 의미나 시즌 흐름 맥락 (데이터 기반)"""
 
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
+GEMINI_MODEL = "gemini-2.0-flash"
 
 
-def _call_anthropic(api_key: str, system: str, user_message: str) -> str:
-    """Anthropic Messages API를 requests로 직접 호출하여 텍스트 응답 반환"""
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
+def _call_gemini(api_key: str, system: str, user_message: str) -> str:
+    """Google Gemini API를 requests로 직접 호출하여 텍스트 응답 반환"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     payload = {
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 4096,
-        "system": system,
-        "messages": [{"role": "user", "content": user_message}],
+        "system_instruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user_message}]}],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 4096,
+        }
     }
-    resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=90)
+    resp = requests.post(url, json=payload, timeout=90)
     if not resp.ok:
-        raise RuntimeError(f"Anthropic API error {resp.status_code}: {resp.text}")
+        raise RuntimeError(f"Gemini API error {resp.status_code}: {resp.text}")
     data = resp.json()
-    return data["content"][0]["text"]
+    return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def generate_golf_news_script(
@@ -80,20 +77,20 @@ def generate_golf_news_script(
     community_reactions: Optional[dict] = None,
 ) -> GolfNewsOutput:
     """
-    수집된 골프 대회 정보를 바탕으로 TTS 스크립트 생성.
+    수집된 골프 대회 정보를 바탕으로 TTS 스크립트 생성 (Gemini 사용).
 
     Args:
         tournaments: 투어별 대회 정보 딕셔너리 리스트
         reference_date: 기준 날짜 (없으면 오늘)
-        api_key: Anthropic API 키 (없으면 환경변수 ANTHROPIC_API_KEY 사용)
+        api_key: Google API 키 (없으면 환경변수 GOOGLE_API_KEY 사용)
         community_reactions: 대회별 커뮤니티 반응 텍스트 딕셔너리 {대회명: 반응텍스트}
 
     Returns:
         GolfNewsOutput: 관전 포인트 + TTS 스크립트 + 썸네일 후보 3개
     """
-    key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
+    key = api_key or os.getenv("GOOGLE_API_KEY", "")
     if not key:
-        raise ValueError("ANTHROPIC_API_KEY가 없습니다.")
+        raise ValueError("GOOGLE_API_KEY가 없습니다.")
 
     ref_date = reference_date or datetime.now()
 
@@ -123,21 +120,26 @@ def generate_golf_news_script(
 - 없는 정보를 추론하거나 예측하는 표현은 절대 사용하지 마세요
 - 뉴스 앵커처럼 자연스럽고 부드러운 구어체로 작성하세요
 
-응답은 반드시 다음 JSON 형식으로만 작성하세요:
+응답은 반드시 다음 JSON 형식으로만 작성하세요. 다른 텍스트 없이 JSON만 출력하세요:
 {{
   "viewing_points": "이번 주 핵심 관전 포인트 2~3줄 요약 (한국 선수 이슈 중심, 200자 이내)",
   "tts_script": "유튜브 TTS 낭독용 스크립트 전문 (1800자 이내)",
   "thumbnails": ["썸네일 문구 후보 1 (15자 이내)", "썸네일 문구 후보 2 (15자 이내)", "썸네일 문구 후보 3 (15자 이내)"]
 }}"""
 
-    raw_text = _call_anthropic(key, SYSTEM_PROMPT, user_message)
+    raw_text = _call_gemini(key, SYSTEM_PROMPT, user_message)
 
     # 코드 블록에 싸인 경우 제거
-    if "```" in raw_text:
-        raw_text = raw_text.split("```")[1]
-        if raw_text.startswith("json"):
-            raw_text = raw_text[4:]
-    data = json.loads(raw_text.strip())
+    clean = raw_text.strip()
+    if "```" in clean:
+        parts = clean.split("```")
+        # ```json ... ``` 형태에서 중간 부분 추출
+        clean = parts[1] if len(parts) > 1 else clean
+        if clean.startswith("json"):
+            clean = clean[4:]
+    clean = clean.strip()
+
+    data = json.loads(clean)
     result = GolfNewsOutput(**data)
 
     # 글자 수 경고
