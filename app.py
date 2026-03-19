@@ -47,6 +47,33 @@ class GenerateRequest(BaseModel):
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/api/health")
+async def health_check():
+    """Vercel 실행 환경 진단용 엔드포인트"""
+    import anthropic as ant
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    result = {
+        "status": "ok",
+        "anthropic_key_set": bool(anthropic_key),
+        "anthropic_key_prefix": anthropic_key[:15] + "..." if anthropic_key else "NOT SET",
+        "anthropic_version": ant.__version__,
+        "google_key_set": bool(os.getenv("GOOGLE_API_KEY")),
+        "notion_key_set": bool(os.getenv("NOTION_API_KEY")),
+    }
+    # 실제 Claude API 호출 테스트
+    if anthropic_key:
+        try:
+            client = ant.Anthropic(api_key=anthropic_key)
+            test_resp = client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=10,
+                messages=[{"role": "user", "content": "hi"}]
+            )
+            result["claude_api_test"] = "SUCCESS"
+        except Exception as e:
+            result["claude_api_test"] = f"FAILED: {str(e)}"
+    return result
+
 @app.post("/api/generate_preview")
 async def api_generate_preview(req: GenerateRequest):
     """이번 주 프리뷰 및 TTS 스크립트 생성"""
