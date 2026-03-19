@@ -1,12 +1,13 @@
 """
 Claude API를 이용한 골프뉴스 유튜브 TTS 스크립트 생성
-모델: claude-3-5-sonnet-20241022
+requests로 Anthropic HTTP API 직접 호출 (SDK 미사용)
 """
 import json
+import os
+import requests
 from datetime import datetime
 from typing import Optional
 
-import anthropic
 from pydantic import BaseModel
 
 
@@ -38,12 +39,38 @@ SYSTEM_PROMPT = """당신은 골프 전문 유튜브 채널의 베테랑 뉴스 
 - 한국 선수 출전 여부 및 해당 대회 성격 (메이저·첫 출전·컷 등)
 - 제공된 뉴스 헤드라인에서 확인된 팩트
 - 대회 규모(총 상금), 코스 특징 등 확인 가능한 팩트
+- 대회의 역사적 의미나 시즌 흐름 맥락 (데이터 기반)
+
 ## 썸네일 문구 작성 기준:
 - 한국 팬이 클릭하고 싶어지는 강렬한 한국어 문구로 작성합니다
 - 각 후보는 **15자 이내**의 짧고 임팩트 있는 메인 문구 형태로 작성합니다
 - 추측이나 과장이 아니라, 실제 이번 주 이슈·선수·대회를 기반으로 작성합니다
 - 예시 형식: "이경훈, 마스터스 첫 도전", "박성현 부활의 시작?", "한국 언니들의 전쟁"
 - 대회의 역사적 의미나 시즌 흐름 맥락 (데이터 기반)"""
+
+
+ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
+
+
+def _call_anthropic(api_key: str, system: str, user_message: str) -> str:
+    """Anthropic Messages API를 requests로 직접 호출하여 텍스트 응답 반환"""
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    payload = {
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 4096,
+        "system": system,
+        "messages": [{"role": "user", "content": user_message}],
+    }
+    resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=90)
+    if not resp.ok:
+        raise RuntimeError(f"Anthropic API error {resp.status_code}: {resp.text}")
+    data = resp.json()
+    return data["content"][0]["text"]
 
 
 def generate_golf_news_script(
@@ -64,7 +91,10 @@ def generate_golf_news_script(
     Returns:
         GolfNewsOutput: 관전 포인트 + TTS 스크립트 + 썸네일 후보 3개
     """
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+    key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise ValueError("ANTHROPIC_API_KEY가 없습니다.")
+
     ref_date = reference_date or datetime.now()
 
     # 대회 정보를 프롬프트용 텍스트로 변환
@@ -100,15 +130,8 @@ def generate_golf_news_script(
   "thumbnails": ["썸네일 문구 후보 1 (15자 이내)", "썸네일 문구 후보 2 (15자 이내)", "썸네일 문구 후보 3 (15자 이내)"]
 }}"""
 
-    response = client.messages.create(
-        model="claude-3-haiku-20240307",
-        max_tokens=4096,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
-    )
+    raw_text = _call_anthropic(key, SYSTEM_PROMPT, user_message)
 
-    # 텍스트 블록에서 JSON 파싱
-    raw_text = response.content[0].text
     # 코드 블록에 싸인 경우 제거
     if "```" in raw_text:
         raw_text = raw_text.split("```")[1]
@@ -151,6 +174,6 @@ def _format_tournaments_for_prompt(tournaments: list[dict], ref_date: datetime) 
 
     if no_tour:
         no_tour_names = [t.get("tour") for t in no_tour]
-        lines.append(f"※ 이번 주 대회 없음: {', '.join(no_tour_names)}")
+        lines.append(f"※ 이번 주 대회 없음: {', '.join([n for n in no_tour_names if n])}")
 
     return "\n".join(lines)
