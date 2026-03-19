@@ -60,18 +60,24 @@ async def health_check():
         "google_key_set": bool(os.getenv("GOOGLE_API_KEY")),
         "notion_key_set": bool(os.getenv("NOTION_API_KEY")),
     }
-    # 실제 Claude API 호출 테스트
+    # 실제 사용 가능한 모델 목록 조회
     if anthropic_key:
         try:
             client = ant.Anthropic(api_key=anthropic_key)
-            test_resp = client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=10,
-                messages=[{"role": "user", "content": "hi"}]
-            )
-            result["claude_api_test"] = "SUCCESS"
+            models = client.models.list()
+            result["available_models"] = [m.id for m in models.data]
         except Exception as e:
-            result["claude_api_test"] = f"FAILED: {str(e)}"
+            result["models_list_error"] = str(e)
+            # 그래도 직접 호출 테스트
+            try:
+                client.messages.create(
+                    model="claude-3-haiku-20240307",
+                    max_tokens=5,
+                    messages=[{"role": "user", "content": "hi"}]
+                )
+                result["claude_api_test"] = "SUCCESS"
+            except Exception as e2:
+                result["claude_api_test"] = f"FAILED: {str(e2)}"
     return result
 
 @app.post("/api/generate_preview")
