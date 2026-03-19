@@ -1,6 +1,6 @@
 """
 Claude API를 이용한 골프뉴스 유튜브 TTS 스크립트 생성
-모델: claude-3-7-sonnet-20250219 (adaptive thinking)
+모델: claude-3-5-sonnet-20241022
 """
 import json
 from datetime import datetime
@@ -101,40 +101,20 @@ def generate_golf_news_script(
 }}"""
 
     response = client.messages.create(
-        model="claude-3-7-sonnet-20250219",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=4096,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
-        output_config={
-            "format": {
-                "type": "json_schema",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "viewing_points": {
-                            "type": "string",
-                            "description": "이번 주 핵심 관전 포인트 요약 (200자 이내)"
-                        },
-                        "tts_script": {
-                            "type": "string",
-                            "description": "유튜브 TTS 스크립트 전문 (1800자 이내)"
-                        },
-                        "thumbnails": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "영상 썸네일 문구 후보 3개 (각 15자 이내)"
-                        }
-                    },
-                    "required": ["viewing_points", "tts_script", "thumbnails"],
-                    "additionalProperties": False
-                }
-            }
-        }
     )
 
     # 텍스트 블록에서 JSON 파싱
-    text_block = next(b for b in response.content if b.type == "text")
-    data = json.loads(text_block.text)
+    raw_text = response.content[0].text
+    # 코드 블록에 싸인 경우 제거
+    if "```" in raw_text:
+        raw_text = raw_text.split("```")[1]
+        if raw_text.startswith("json"):
+            raw_text = raw_text[4:]
+    data = json.loads(raw_text.strip())
     result = GolfNewsOutput(**data)
 
     # 글자 수 경고
