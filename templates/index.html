@@ -197,10 +197,79 @@
         }
 
         /* Responsive */
+        /* 커뮤니티 반응 입력 카드 */
+        .reaction-card {
+            background: rgba(255, 204, 0, 0.05);
+            border: 1px solid rgba(255, 204, 0, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        .reaction-tour-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .reaction-tour-item label {
+            font-size: 0.8rem;
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+        .reaction-tour-item textarea {
+            min-height: 70px;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+        /* 썸네일 후보 카드 */
+        .thumbnail-section {
+            margin-top: 32px;
+            display: none;
+        }
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 12px;
+        }
+        .thumbnail-card {
+            background: rgba(10, 132, 255, 0.1);
+            border: 1px solid rgba(10, 132, 255, 0.3);
+            border-radius: 14px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .thumbnail-card:hover {
+            background: rgba(10, 132, 255, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2);
+        }
+        .thumbnail-card .num {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        .thumbnail-card .text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+        .thumbnail-card .copy-hint {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .thumbnail-card:hover .copy-hint { opacity: 1; }
         @media (max-width: 900px) {
-            .output-section {
-                grid-template-columns: 1fr;
-            }
+            .output-section { grid-template-columns: 1fr; }
+            .thumbnail-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -226,10 +295,7 @@
                 <span>지난주 결과 리포트 생성</span>
                 <div class="loader" id="loader-report"></div>
             </button>
-            <button id="btn-image">
-                <span>이미지 프롬프트 추출</span>
-                <div class="loader" id="loader-image"></div>
-            </button>
+
             <button id="btn-notion" style="background-color: #ffffff; color: #000; border: none; font-weight: 700;">
                 <span>📓 노션으로 내보내기</span>
                 <div class="loader" id="loader-notion" style="border-top-color: #000;"></div>
@@ -254,47 +320,89 @@
             </div>
         </div>
 
-        <div class="card" id="image-section" style="display:none; margin-top: 40px;">
-            <div class="panel-header">🎨 이미지 생성 맵 (Gemini 전용 프롬프트)</div>
-            <div class="table-container">
-                <table id="prompt-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">순서</th>
-                            <th style="width: 25%;">뉴스 내용 (시간 분할)</th>
-                            <th style="width: 40%;">추천 이미지 프롬프트 (영문)</th>
-                            <th style="width: 30%;">이미지 특징 및 사실성 강화 포인트</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- 데이터 로드 시 행 추가 -->
-                    </tbody>
-                </table>
-            </div>
+        <!-- 커뮤니티 반응 입력 섹션 -->
+        <div class="reaction-card" id="reaction-section" style="display:none;">
+            <div class="panel-header" style="color: var(--accent-gold);">💬 대회별 커뮤니티 반응 입력 <span style="font-size:0.75rem; color:var(--text-dim); font-weight:400;">(선택사항 — 입력 시 스크립트 톤에 자동 반영)</span></div>
+            <div id="reaction-inputs"></div>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin: 4px 0 0;">📌 커뮤니티 반응을 입력한 뒤 다시 [프리뷰 생성] 버튼을 누르면 반응이 반영된 스크립트가 생성됩니다.</p>
         </div>
+
+        <!-- 썸네일 후보 섹션 -->
+        <div class="thumbnail-section" id="thumbnail-section">
+            <div class="panel-header">🖼️ AI 추천 썸네일 문구 후보</div>
+            <div class="thumbnail-grid" id="thumbnail-grid"></div>
+        </div>
+
+
     </div>
 
     <script>
         const btnPreview = document.getElementById('btn-preview');
         const btnReport = document.getElementById('btn-report');
-        const btnImage = document.getElementById('btn-image');
         const btnNotion = document.getElementById('btn-notion');
         const loaderPreview = document.getElementById('loader-preview');
         const loaderReport = document.getElementById('loader-report');
-        const loaderImage = document.getElementById('loader-image');
         const loaderNotion = document.getElementById('loader-notion');
         const outputScript = document.getElementById('output-script');
         const outputPoints = document.getElementById('output-points');
         const tourList = document.getElementById('tournaments-list');
-        const imageSection = document.getElementById('image-section');
-        const promptTable = document.getElementById('prompt-table').getElementsByTagName('tbody')[0];
         const scriptCount = document.getElementById('script-count');
+        const reactionSection = document.getElementById('reaction-section');
+        const reactionInputs = document.getElementById('reaction-inputs');
+        const thumbnailSection = document.getElementById('thumbnail-section');
+        const thumbnailGrid = document.getElementById('thumbnail-grid');
 
         let lastTournaments = [];
-        let currentSegments = [];
+
+        // 커뮤니티 반응 입력란 동적 생성
+        function buildReactionInputs(tournaments) {
+            const active = tournaments.filter(t => t.name && t.name !== '해당 없음' && t.name !== '수집 실패');
+            if (active.length === 0) { reactionSection.style.display = 'none'; return; }
+            reactionInputs.innerHTML = active.map(t => `
+                <div class="reaction-tour-item">
+                    <label>[${t.tour}] ${t.name}</label>
+                    <textarea id="reaction-${t.tour}" placeholder="ex) 친팅 전적 1위 중, 팬들 사이에서 열기 많음 / 코스 남로다코스 난이도 진짜 매우 높다는 도바 많음"></textarea>
+                </div>`).join('');
+            reactionSection.style.display = 'block';
+        }
+
+        // 커뮤니티 반응 값 펌 수집
+        function collectReactions(tournaments) {
+            const result = {};
+            const active = tournaments.filter(t => t.name && t.name !== '해당 없음' && t.name !== '수집 실패');
+            active.forEach(t => {
+                const el = document.getElementById(`reaction-${t.tour}`);
+                if (el && el.value.trim()) result[`${t.tour} - ${t.name}`] = el.value.trim();
+            });
+            return result;
+        }
+
+        // 썸네일 후보 렌더링
+        function renderThumbnails(thumbnails) {
+            if (!thumbnails || thumbnails.length === 0) { thumbnailSection.style.display = 'none'; return; }
+            thumbnailGrid.innerHTML = thumbnails.map((t, i) => `
+                <div class="thumbnail-card" onclick="copyText('${t.replace(/'/g, "\\'")}')" title="클릭하면 복사">
+                    <div class="num">후보 ${i + 1}</div>
+                    <div class="text">${t}</div>
+                    <div class="copy-hint">클릭하면 클립보드에 복사 ↗</div>
+                </div>`).join('');
+            thumbnailSection.style.display = 'block';
+            thumbnailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.createElement('div');
+                toast.textContent = `'최복사: ${text}'`;
+                toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#0a84ff;color:white;padding:10px 24px;border-radius:999px;font-size:0.85rem;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s';
+                document.body.appendChild(toast);
+                setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 1500);
+            });
+        }
 
         btnPreview.onclick = async () => {
             const date = document.getElementById('ref-date').value;
+            const community_reactions = collectReactions(lastTournaments);
             loaderPreview.style.display = 'block';
             btnPreview.disabled = true;
             document.getElementById('label-script').innerHTML = '📝 TTS 스크립트 (프리뷰) <span id="script-count" class="status-badge" style="display:none;">0자</span>';
@@ -304,7 +412,7 @@
                 const response = await fetch('/api/generate_preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date })
+                    body: JSON.stringify({ date, community_reactions })
                 });
                 const data = await response.json();
 
@@ -320,6 +428,9 @@
                         const status = t.name !== '해당 없음' && t.name !== '수집 실패' ? '✅' : '⚪';
                         return `<div>${status} [${t.tour}] ${t.name || '정보 없음'}</div>`;
                     }).join('');
+
+                    buildReactionInputs(data.tournaments);
+                    renderThumbnails(data.thumbnails);
                 } else {
                     alert('에러: ' + data.detail);
                 }
@@ -369,111 +480,7 @@
             }
         };
 
-        btnImage.onclick = async () => {
-            const script = outputScript.value;
-            if (!script) {
-                alert('먼저 대본을 생성해 주세요.');
-                return;
-            }
 
-            loaderImage.style.display = 'block';
-            btnImage.disabled = true;
-
-            try {
-                const response = await fetch('/api/generate_prompts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        script: script,
-                        tournaments: lastTournaments
-                    })
-                });
-                const data = await response.json();
-
-                if (response.ok) {
-                    currentSegments = data.segments;
-                    promptTable.innerHTML = '';
-                    data.segments.forEach(seg => {
-                        const row = promptTable.insertRow();
-                        row.id = `row-seg-${seg.segment_id}`;
-
-                        // 1. 순서
-                        row.insertCell(0).innerText = seg.segment_id;
-
-                        // 2. 뉴스 내용 (시간 분할)
-                        row.insertCell(1).innerText = seg.script;
-
-                        // 3. 추천 이미지 프롬프트 (영문)
-                        const promptCell = row.insertCell(2);
-                        promptCell.innerHTML = `
-                            <div style="font-size: 0.85rem; color: #7cfc00; font-family: monospace; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; line-height: 1.4;">
-                                ${seg.prompt}
-                            </div>
-                        `;
-
-                        // 4. 이미지 특징 및 사실성 강화 포인트
-                        const contextCell = row.insertCell(3);
-                        contextCell.innerHTML = `
-                            <div style="color: var(--accent-gold); font-size: 0.85rem; line-height: 1.5;">
-                                ${seg.background_context || '정보 없음'}
-                            </div>
-                        `;
-                    });
-                    imageSection.style.display = 'block';
-                    imageSection.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    alert('에러: ' + data.detail);
-                }
-            } catch (e) {
-                alert('네트워크 에러: ' + e);
-            } finally {
-                loaderImage.style.display = 'none';
-                btnImage.disabled = false;
-            }
-        };
-
-        // 개별 이미지 생성 함수
-        async function generateSingleImage(segId) {
-            const segment = currentSegments.find(s => s.segment_id === segId);
-            if (!segment) return;
-
-            const loader = document.getElementById(`loader-seg-${segId}`);
-            const container = document.getElementById(`container-seg-${segId}`);
-
-            loader.style.display = 'block';
-            container.querySelector('button').disabled = true;
-
-            try {
-                const response = await fetch('/api/generate_actual_images', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ segments: [segment] })
-                });
-                const data = await response.json();
-
-                if (response.ok && data.images && data.images[0].image_url) {
-                    const imgUrl = data.images[0].image_url;
-                    container.innerHTML = `
-                <div style="position:relative;">
-                    <img src="${imgUrl}" style="width:100%; border-radius:8px; margin-bottom:8px; border:1px solid var(--glass-border);">
-                    <a href="${imgUrl}" download="gugolf_image_${segId}.png" style="display:block; background:rgba(255,255,255,0.1); color:#fff; text-decoration:none; padding:5px; border-radius:4px; font-size:0.75rem;">
-                        📥 다운로드
-                    </a>
-                </div>
-            `;
-                } else {
-                    alert('이미지 생성 실패: ' + (data.images ? data.images[0].error : '알 수 없는 에러'));
-                    container.querySelector('button').disabled = false;
-                }
-            } catch (e) {
-                alert('네트워크 에러: ' + e);
-                container.querySelector('button').disabled = false;
-            } finally {
-                loader.style.display = 'none';
-            }
-        }
-
-        // 전체 생성 버튼도 유지하되 내부적으로 개별 생성을 순차 실행하도록 변경 가능 (현재는 기존 로직 유지)
         // 노션 내보내기 함수
         btnNotion.onclick = async () => {
             const script = outputScript.value;
@@ -500,8 +507,7 @@
                         type: type, // 유형 추가 (프리뷰/리포트)
                         tts_script: script,
                         viewing_points: outputPoints.value,
-                        tournaments: lastTournaments, // Changed from currentTournaments to lastTournaments
-                        segments: currentSegments
+                        tournaments: lastTournaments // Changed from currentTournaments to lastTournaments
                     })
                 });
                 const data = await response.json();

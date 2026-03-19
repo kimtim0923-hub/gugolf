@@ -14,8 +14,6 @@ from pathlib import Path
 # 기존 모듈 임포트
 from main import collect_all_tours
 from script_generator import generate_golf_news_script
-from image_prompt_generator import generate_image_prompts
-from image_service import generate_nano_banana_images
 from report_generator import generate_golf_report
 import requests
 
@@ -39,15 +37,11 @@ app.add_middleware(
 # 정적 파일 및 템플릿 설정
 templates = Jinja2Templates(directory="templates")
 
-# static 및 images 폴더 생성
-static_path = Path(__file__).parent / "static"
-images_path = static_path / "images"
-images_path.mkdir(parents=True, exist_ok=True)
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class GenerateRequest(BaseModel):
     date: Optional[str] = None
+    community_reactions: Optional[dict] = None  # {대회별 커뮤니티 반응}
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -67,12 +61,14 @@ async def api_generate_preview(req: GenerateRequest):
         result = generate_golf_news_script(
             tournaments=tournaments,
             reference_date=ref_date,
-            api_key=api_key
+            api_key=api_key,
+            community_reactions=req.community_reactions
         )
         
         return {
             "viewing_points": result.viewing_points,
             "tts_script": result.tts_script,
+            "thumbnails": result.thumbnails,
             "tournaments": tournaments
         }
     except Exception as e:
@@ -101,6 +97,7 @@ async def api_generate_report(req: GenerateRequest):
         return {
             "viewing_points": result.summary,
             "tts_script": result.tts_script,
+            "thumbnails": getattr(result, 'thumbnails', []),
             "tournaments": tournaments
         }
     except Exception as e:
@@ -108,42 +105,6 @@ async def api_generate_report(req: GenerateRequest):
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/generate_prompts")
-async def api_generate_prompts(req: dict):
-    """대본 기반 이미지 프롬프트 생성"""
-    print(f"DEBUG: /api/generate_prompts requested - script length: {len(req.get('script', ''))}")
-    script = req.get("script")
-    tournaments = req.get("tournaments", [])
-    if not script:
-        raise HTTPException(status_code=400, detail="대본이 없습니다.")
-        
-    try:
-        # 이미지 프롬프트 생성에 제미나이(Google)를 사용하도록 변경됨
-        api_key = os.getenv("GOOGLE_API_KEY")
-        segments = generate_image_prompts(script, tournaments, api_key)
-        return {"segments": segments}
-    except Exception as e:
-        print(f"이미지 프롬프트 생성 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/generate_actual_images")
-async def api_generate_actual_images(req: dict):
-    """나노바나나(Gemini)를 통한 실제 이미지 생성"""
-    segments = req.get("segments")
-    if not segments:
-        raise HTTPException(status_code=400, detail="프롬프트 세그먼트가 없습니다.")
-    
-    google_key = os.getenv("GOOGLE_API_KEY")
-    if not google_key:
-        raise HTTPException(status_code=500, detail="GOOGLE_API_KEY (Gemini/Nano Banana용)가 설정되지 않았습니다.")
-
-    try:
-        # 실제 나노바나나 API 호출 및 로컬 저장
-        results = generate_nano_banana_images(segments, str(images_path))
-        return {"images": results}
-    except Exception as e:
-        print(f"나노바나나 이미지 생성 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/export_notion")
 async def api_export_notion(req: dict):
@@ -160,7 +121,6 @@ async def api_export_notion(req: dict):
         tts_script = req.get("tts_script", "")
         viewing_points = req.get("viewing_points", "")
         tournaments = req.get("tournaments", [])
-        segments = req.get("segments", [])
 
         # 노션 페이지 생성 데이터 구성
         headers = {
@@ -189,18 +149,6 @@ async def api_export_notion(req: dict):
                 "bulleted_list_item": {"rich_text": [{"type": "text", "text": {"content": f"{status} [{t.get('tour')}] {t.get('name')} (일시: {t.get('date', '미정')})"}}] }
             })
 
-        children.append({"object": "block", "type": "heading_1", "heading_1": {"rich_text": [{"type": "text", "text": {"content": "🎨 이미지 생성 맵"}}]}})
-
-        # 세그먼트별 프롬프트 정보 추가 (콜아웃 형태로 구성)
-        for s in segments:
-            children.append({
-                "object": "block", "type": "callout",
-                "callout": {
-                    "icon": {"type": "emoji", "emoji": "🖼️"},
-                    "color": "gray_background",
-                    "rich_text": [{"type": "text", "text": {"content": f"순서: {s.get('segment_id')}\n뉴스 내용: {s.get('script')}\n\n[추천 프롬프트]\n{s.get('prompt')}\n\n[강화 포인트]\n{s.get('background_context')}"}}]
-                }
-            })
 
         # 노션 API 호출 (페이지 생성)
         notion_url = "https://api.notion.com/v1/pages"
