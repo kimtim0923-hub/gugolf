@@ -50,34 +50,43 @@ async def read_root(request: Request):
 @app.get("/api/health")
 async def health_check():
     """Vercel 실행 환경 진단용 엔드포인트"""
-    import anthropic as ant
+    import requests as req_lib
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    google_key = os.getenv("GOOGLE_API_KEY", "")
     result = {
         "status": "ok",
-        "anthropic_key_set": bool(anthropic_key),
         "anthropic_key_prefix": anthropic_key[:15] + "..." if anthropic_key else "NOT SET",
-        "anthropic_version": ant.__version__,
-        "google_key_set": bool(os.getenv("GOOGLE_API_KEY")),
-        "notion_key_set": bool(os.getenv("NOTION_API_KEY")),
+        "google_key_set": bool(google_key),
+        "claude_models": {},
+        "gemini_models": {},
     }
-    # 실제 사용 가능한 모델 목록 조회
     if anthropic_key:
-        try:
-            client = ant.Anthropic(api_key=anthropic_key)
-            models = client.models.list()
-            result["available_models"] = [m.id for m in models.data]
-        except Exception as e:
-            result["models_list_error"] = str(e)
-            # 그래도 직접 호출 테스트
+        for model in ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022",
+                      "claude-3-haiku-20240307", "claude-3-opus-20240229",
+                      "claude-3-7-sonnet-20250219", "claude-2.1"]:
             try:
-                client.messages.create(
-                    model="claude-3-haiku-20240307",
-                    max_tokens=5,
-                    messages=[{"role": "user", "content": "hi"}]
+                r = req_lib.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": anthropic_key, "anthropic-version": "2023-06-01",
+                             "content-type": "application/json"},
+                    json={"model": model, "max_tokens": 5,
+                          "messages": [{"role": "user", "content": "hi"}]},
+                    timeout=15,
                 )
-                result["claude_api_test"] = "SUCCESS"
-            except Exception as e2:
-                result["claude_api_test"] = f"FAILED: {str(e2)}"
+                result["claude_models"][model] = "OK" if r.ok else f"FAIL {r.status_code}"
+            except Exception as e:
+                result["claude_models"][model] = f"ERR: {str(e)[:60]}"
+    if google_key:
+        for model in ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-001"]:
+            try:
+                r = req_lib.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={google_key}",
+                    json={"contents": [{"role": "user", "parts": [{"text": "hi"}]}]},
+                    timeout=15,
+                )
+                result["gemini_models"][model] = "OK" if r.ok else f"FAIL {r.status_code}: {r.text[:80]}"
+            except Exception as e:
+                result["gemini_models"][model] = f"ERR: {str(e)[:60]}"
     return result
 
 @app.post("/api/generate_preview")
