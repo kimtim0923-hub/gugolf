@@ -1,0 +1,222 @@
+[
+  {
+    "name": "제21회 DB손해보험 프로미 오픈",
+    "start_date": "2026-04-16",
+    "end_date": "2026-04-19",
+    "course": "라비에벨 골프앤리조트",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,000,000,000",
+    "type": ""
+  },
+  {
+    "name": "2026 우리금융챔피언십",
+    "start_date": "2026-04-23",
+    "end_date": "2026-04-26",
+    "course": "서원밸리 CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,500,000,000",
+    "type": ""
+  },
+  {
+    "name": "제45회 GS칼텍스 매경오픈",
+    "start_date": "2026-04-30",
+    "end_date": "2026-05-03",
+    "course": "남서울 CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,300,000,000",
+    "type": ""
+  },
+  {
+    "name": "KPGA 파운더스컵",
+    "start_date": "2026-05-07",
+    "end_date": "2026-05-10",
+    "course": "골프존카운티 영암45",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "700,000,000",
+    "type": ""
+  },
+  {
+    "name": "KPGA 경북오픈",
+    "start_date": "2026-05-14",
+    "end_date": "2026-05-17",
+    "course": "골프존카운티 선산",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "700,000,000",
+    "type": ""
+  },
+  {
+    "name": "코오롱 제68회 한국오픈",
+    "start_date": "2026-05-21",
+    "end_date": "2026-05-24",
+    "course": "우정힐스 CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "0",
+    "type": ""
+  },
+  {
+    "name": "제69회 KPGA 선수권대회 with A-ONE CC",
+    "start_date": "2026-06-04",
+    "end_date": "2026-06-07",
+    "course": "에이원 CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,600,000,000",
+    "type": "MAJOR"
+  },
+  {
+    "name": "KPGA 클래식",
+    "start_date": "2026-06-11",
+    "end_date": "2026-06-14",
+    "course": "사이프러스골프&리조트",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "700,000,000",
+    "type": ""
+  },
+  {
+    "name": "하나은행 인비테이셔널",
+    "start_date": "2026-06-18",
+    "end_date": "2026-06-21",
+    "course": "남춘천CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,300,000,000",
+    "type": ""
+  },
+  {
+    "name": "KPGA 군산CC 오픈",
+    "start_date": "2026-06-25",
+    "end_date": "2026-06-28",
+    "course": "군산 CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "700,000,000",
+    "type": ""
+  },
+  {
+    "name": "SBS 오픈 (가칭)",
+    "start_date": "2026-08-27",
+    "end_date": "2026-08-30",
+    "course": "",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "700,000,000",
+    "type": ""
+  },
+  {
+    "name": "인스앤코 인비테이셔널",
+    "start_date": "2026-09-03",
+    "end_date": "2026-09-06",
+    "course": "",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "800,000,000",
+    "type": ""
+  },
+  {
+    "name": "제42회 신한동해오픈",
+    "start_date": "2026-09-10",
+    "end_date": "2026-09-13",
+    "course": "잭 니클라우스 골프클럽 코리아",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,500,000,000",
+    "type": ""
+  },
+  {
+    "name": "골프존 오픈",
+    "start_date": "2026-09-17",
+    "end_date": "2026-09-20",
+    "course": "",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,000,000,000",
+    "type": ""
+  },
+  {
+    "name": "현대해상 최경주 인비테이셔널",
+    "start_date": "2026-10-01",
+    "end_date": "2026-10-04",
+    "course": "페럼클럽",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,250,000,000",
+    "type": ""
+  },
+  {
+    "name": "OO오픈",
+    "start_date": "2026-10-08",
+    "end_date": "2026-10-11",
+    "course": "",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "700,000,000",
+    "type": ""
+  },
+  {
+    "name": "더채리티클래식 2026",
+    "start_date": "2026-10-15",
+    "end_date": "2026-10-18",
+    "course": "서원밸리 CC",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,000,000,000",
+    "type": ""
+  },
+  {
+    "name": "제네시스 챔피언십",
+    "start_date": "2026-10-22",
+    "end_date": "2026-10-25",
+    "course": "",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "4,000,000",
+    "type": ""
+  },
+  {
+    "name": "2026 렉서스 마스터즈",
+    "start_date": "2026-10-29",
+    "end_date": "2026-11-01",
+    "course": "",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,000,000,000",
+    "type": ""
+  },
+  {
+    "name": "KPGA 투어챔피언십 in JEJU",
+    "start_date": "2026-11-05",
+    "end_date": "2026-11-08",
+    "course": "테디밸리 골프앤리조트",
+    "city": "",
+    "state": "",
+    "country": "South Korea",
+    "prize": "1,100,000,000",
+    "type": ""
+  }
+]
